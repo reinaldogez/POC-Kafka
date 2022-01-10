@@ -12,23 +12,26 @@ namespace POC_Kafka
     {
         static async Task Main(string[] args)
         {
-            var config = await ConfigFiles.LoadConfig("./kafka.config", null);
-            //Produce("Test");
-            Consume("Test", config);
+            var mode = args[0];
+
+            switch (mode)
+            {
+                case "produce":
+                    var configProducer = await ConfigFiles.LoadConfig<ProducerConfig>("./kafkaproducer.config");
+                    Produce("Test", configProducer);
+                    break;
+                case "consume":
+                    var configConsumer = await ConfigFiles.LoadConfig<ConsumerConfig>("./kafkaconsumer.config");
+                    Consume("Test", configConsumer);
+                    break;
+                default:
+                    break;
+            }
+
         }
 
-        static void Produce(string topic)
+        static void Produce(string topic, ClientConfig config)
         {
-            var config = new ProducerConfig
-            {
-                //BootstrapServers = "host1:9092,host2:9092",
-                BootstrapServers = "localhost:29092",
-
-                ClientId = Dns.GetHostName(),
-                //...
-            };
-
-
             using (var producer = new ProducerBuilder<string, string>(config).Build())
             {
                 int numProduced = 0;
@@ -61,21 +64,20 @@ namespace POC_Kafka
             }
         }
 
-        static void Consume(string topic, ClientConfig config)
+        static void Consume(string topic, ConsumerConfig config)
         {
-            var consumerConfig = new ConsumerConfig(config);
-            consumerConfig.GroupId = "consumer-group-1";
-            consumerConfig.AutoOffsetReset = AutoOffsetReset.Earliest;
-            consumerConfig.EnableAutoCommit = false;
+            config.GroupId = "consumer-group-1";
+            config.AutoOffsetReset = AutoOffsetReset.Earliest;
+            //config.EnableAutoCommit = false;
 
             CancellationTokenSource cts = new CancellationTokenSource();
             Console.CancelKeyPress += (_, e) =>
             {
-                e.Cancel = true; // prevent the process from terminating.
+                e.Cancel = true; // evitar que o processo termine.
                 cts.Cancel();
             };
 
-            using (var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build())
+            using (var consumer = new ConsumerBuilder<string, string>(config).Build())
             {
                 consumer.Subscribe(topic);
                 var totalCount = 0;
@@ -90,7 +92,7 @@ namespace POC_Kafka
                 }
                 catch (OperationCanceledException)
                 {
-                    // Ctrl-C was pressed.
+                    // Ctrl-C pressionado
                 }
                 finally
                 {
