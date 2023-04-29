@@ -3,8 +3,10 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using PocKafka.Events;
 using PocKafka.Utils;
 
 namespace PocKafka;
@@ -13,21 +15,24 @@ class Program
     static async Task Main(string[] args)
     {
         var mode = args[0];
+        ServiceProvider serviceProvider = await ConfigureServices();
+        EventProducer eventProducer = serviceProvider.GetRequiredService<EventProducer>();
+        PostCreatedEvent postCreatedEvent = CreatePostCreatedEvent();
+        await eventProducer.ProduceAsync("EventTopic", postCreatedEvent);
 
         switch (mode)
         {
             case "produce":
-                var configProducer = await ConfigFiles.LoadConfig<ProducerConfig>("..\\config\\kafkaproducer.config");
+                ProducerConfig configProducer = serviceProvider.GetRequiredService<ProducerConfig>();
                 Produce("Test", configProducer);
                 break;
             case "consume":
-                var configConsumer = await ConfigFiles.LoadConfig<ConsumerConfig>("..\\config\\kafkaconsumer.config");
+                ConsumerConfig configConsumer = serviceProvider.GetRequiredService<ConsumerConfig>();
                 Consume("Test", configConsumer);
                 break;
             default:
                 break;
         }
-
     }
 
     static void Produce(string topic, ClientConfig config)
@@ -99,6 +104,33 @@ class Program
                 consumer.Close();
             }
         }
+    }
+
+    static async Task<ServiceProvider> ConfigureServices()
+    {
+        ProducerConfig configProducer = await ConfigFiles.LoadConfig<ProducerConfig>("..\\config\\kafkaproducer.config");
+        ConsumerConfig configConsumer = await ConfigFiles.LoadConfig<ConsumerConfig>("..\\config\\kafkaconsumer.config");
+
+        var services = new ServiceCollection();
+        services.AddSingleton<ProducerConfig>(configProducer);
+        services.AddSingleton<ConsumerConfig>(configConsumer);
+
+        services.AddScoped<EventProducer>();
+
+        ServiceProvider serviceProvider = services.BuildServiceProvider();
+        return serviceProvider;
+    }
+
+    static PostCreatedEvent CreatePostCreatedEvent()
+    {
+        PostCreatedEvent postCreatedEvent = new();
+        postCreatedEvent.Id = new Guid();
+        postCreatedEvent.Author = "Robert C. Martin";
+        postCreatedEvent.DatePosted = DateTime.Today;
+        postCreatedEvent.Message = "Truth can only be found in one place: the code.";
+        postCreatedEvent.Type = postCreatedEvent.GetType().FullName;
+        postCreatedEvent.Version = 0;
+        return postCreatedEvent;
     }
 }
 
