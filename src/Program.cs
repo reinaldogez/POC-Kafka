@@ -6,135 +6,131 @@ using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using PocKafka;
 using PocKafka.Events;
 using PocKafka.Utils;
 
-namespace PocKafka;
-class Program
+
+ServiceProvider serviceProvider = await ConfigureServices();
+
+try
 {
-    static async Task Main(string[] args)
-    {
-        var mode = args[0];
-        ServiceProvider serviceProvider = await ConfigureServices();
-        EventProducer eventProducer = serviceProvider.GetRequiredService<EventProducer>();
-        PostCreatedEvent postCreatedEvent = CreatePostCreatedEvent();
-        await eventProducer.ProduceAsync("EventTopic", postCreatedEvent);
+    await Go();
+}
+catch (Exception e)
+{
+    Console.WriteLine("Error: {0}", e);
+}
+finally
+{
+    Console.WriteLine("End of POC-Kafka, press any key to exit.");
+    Console.ReadLine();
+}
 
-        switch (mode)
+async Task Go()
+{
+    CancellationTokenSource cts = new CancellationTokenSource();
+    Console.CancelKeyPress += (sender, e) =>
+    {
+        e.Cancel = true;
+        Console.WriteLine("CancelKeyPress event triggered");
+        cts.Cancel();
+        Environment.Exit(0);
+    };
+    EventConsumer eventConsumer = serviceProvider.GetRequiredService<EventConsumer>();
+
+#if DEBUG
+
+    Console.WriteLine("Debug mode is on.");
+
+    // Start the eventConsumer in a separate Task
+    Task consumeTask = Task.Run(() => eventConsumer.Consume("EventTopic", cts.Token));
+
+    while (!cts.Token.IsCancellationRequested)
+    {
+        await Task.Delay(1000);
+    }
+    Environment.Exit(0);
+
+#endif
+
+    Console.WriteLine("Debug mode is off.");
+    while (true)
+    {
+        PrintPrompt();
+        ConsoleKeyInfo consoleKeyInfo = Console.ReadKey(true);
+
+        switch (consoleKeyInfo.Key)
         {
-            case "produce":
-                ProducerConfig configProducer = serviceProvider.GetRequiredService<ProducerConfig>();
-                Produce("Test", configProducer);
+            case ConsoleKey.D0:
+                EventProducer eventProducer = serviceProvider.GetRequiredService<EventProducer>();
+                PostCreatedEvent postCreatedEvent = CreatePostCreatedEvent();
+                await eventProducer.ProduceAsync("EventTopic", postCreatedEvent);
                 break;
-            case "consume":
-                ConsumerConfig configConsumer = serviceProvider.GetRequiredService<ConsumerConfig>();
-                Consume("Test", configConsumer);
+            case ConsoleKey.D1:
+                Task startConsumerTask = Task.Run(() => eventConsumer.Consume("EventTopic", cts.Token));
                 break;
+            case ConsoleKey.D2:
+                break;
+            case ConsoleKey.D3:
+                break;
+            case ConsoleKey.D4:
+                break;
+            case ConsoleKey.D5:
+
+                break;
+            case ConsoleKey.D6:
+
+                break;
+            case ConsoleKey.D7:
+
+                break;
+            case ConsoleKey.D8:
+
+                break;
+            case ConsoleKey.Escape:
+                Console.WriteLine("Exiting...");
+                return;
+
             default:
+                Console.WriteLine("Select choice");
                 break;
         }
-    }
-
-    static void Produce(string topic, ClientConfig config)
-    {
-        using (var producer = new ProducerBuilder<string, string>(config).Build())
-        {
-            int numProduced = 0;
-            int numMessages = 10;
-            for (int i = 0; i < numMessages; ++i)
-            {
-                var key = "alice";
-                var val = JObject.FromObject(new { count = i }).ToString(Formatting.None);
-
-                Console.WriteLine($"Producing record: {key} {val}");
-
-                producer.Produce(topic, new Message<string, string> { Key = key, Value = val },
-                    (deliveryReport) =>
-                    {
-                        if (deliveryReport.Error.Code != ErrorCode.NoError)
-                        {
-                            Console.WriteLine($"Failed to deliver message: {deliveryReport.Error.Reason}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Produced message to: {deliveryReport.TopicPartitionOffset}");
-                            numProduced += 1;
-                        }
-                    });
-            }
-
-            producer.Flush(TimeSpan.FromSeconds(10));
-
-            Console.WriteLine($"{numProduced} messages were produced to topic {topic}");
-        }
-    }
-
-    static void Consume(string topic, ConsumerConfig config)
-    {
-        config.GroupId = "consumer-group-1";
-        config.AutoOffsetReset = AutoOffsetReset.Earliest;
-        //config.EnableAutoCommit = false;
-
-        CancellationTokenSource cts = new CancellationTokenSource();
-        Console.CancelKeyPress += (_, e) =>
-        {
-            e.Cancel = true; // evitar que o processo termine.
-            cts.Cancel();
-        };
-
-        using (var consumer = new ConsumerBuilder<string, string>(config).Build())
-        {
-            consumer.Subscribe(topic);
-            var totalCount = 0;
-            try
-            {
-                while (true)
-                {
-                    var cr = consumer.Consume(cts.Token);
-                    totalCount += JObject.Parse(cr.Message.Value).Value<int>("count");
-                    Console.WriteLine($"Consumed record with key {cr.Message.Key} and value {cr.Message.Value}, and updated total count to {totalCount}");
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Ctrl-C pressionado
-            }
-            finally
-            {
-                consumer.Close();
-            }
-        }
-    }
-
-    static async Task<ServiceProvider> ConfigureServices()
-    {
-        ProducerConfig configProducer = await ConfigFiles.LoadConfig<ProducerConfig>("..\\config\\kafkaproducer.config");
-        ConsumerConfig configConsumer = await ConfigFiles.LoadConfig<ConsumerConfig>("..\\config\\kafkaconsumer.config");
-
-        var services = new ServiceCollection();
-        services.AddSingleton<ProducerConfig>(configProducer);
-        services.AddSingleton<ConsumerConfig>(configConsumer);
-
-        services.AddScoped<EventProducer>();
-
-        ServiceProvider serviceProvider = services.BuildServiceProvider();
-        return serviceProvider;
-    }
-
-    static PostCreatedEvent CreatePostCreatedEvent()
-    {
-        PostCreatedEvent postCreatedEvent = new();
-        postCreatedEvent.Id = new Guid();
-        postCreatedEvent.Author = "Robert C. Martin";
-        postCreatedEvent.DatePosted = DateTime.Today;
-        postCreatedEvent.Message = "Truth can only be found in one place: the code.";
-        postCreatedEvent.Type = postCreatedEvent.GetType().FullName;
-        postCreatedEvent.Version = 0;
-        return postCreatedEvent;
     }
 }
 
+void PrintPrompt()
+{
+    Console.WriteLine("0 - Scenario 0: Produce PostCreatedEvent");
+    Console.WriteLine("1 - Scenario 1: Start EventConsumer");
+}
 
 
+static async Task<ServiceProvider> ConfigureServices()
+{
+    ProducerConfig configProducer = await ConfigFiles.LoadConfig<ProducerConfig>("..\\config\\kafkaproducer.config");
+    ConsumerConfig configConsumer = await ConfigFiles.LoadConfig<ConsumerConfig>("..\\config\\kafkaconsumer.config");
 
+    var services = new ServiceCollection();
+    services.AddSingleton<ProducerConfig>(configProducer);
+    services.AddSingleton<ConsumerConfig>(configConsumer);
 
+    services.AddScoped<EventProducer>();
+    services.AddScoped<EventConsumer>();
+    services.AddScoped<PocKafka.EventHandler>();
+
+    ServiceProvider serviceProvider = services.BuildServiceProvider();
+    return serviceProvider;
+}
+
+static PostCreatedEvent CreatePostCreatedEvent()
+{
+    PostCreatedEvent postCreatedEvent = new();
+    postCreatedEvent.Id = Guid.NewGuid();
+    postCreatedEvent.Author = "Robert C. Martin";
+    postCreatedEvent.DatePosted = DateTime.Now;
+    postCreatedEvent.Message = "Truth can only be found in one place: the code.";
+    postCreatedEvent.Type = nameof(PostCreatedEvent);
+    postCreatedEvent.Version = 0;
+    return postCreatedEvent;
+}

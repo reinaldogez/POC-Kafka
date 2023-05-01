@@ -32,5 +32,11 @@ public class EventProducer
         {
             throw new Exception($"Could not produce {eventData.GetType().Name} message to topic - {topic} due to the following reason: {deliveryResult.Message}.");
         }
+        if (deliveryResult.Status == PersistenceStatus.Persisted)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine($"Message persisted. eventMessageKey: {eventMessage.Key}");
+            Console.ResetColor();
+        }
     }
 }

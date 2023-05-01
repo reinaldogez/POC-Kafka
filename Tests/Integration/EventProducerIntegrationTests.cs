@@ -42,17 +42,17 @@ public class EventProducerIntegrationTests : IClassFixture<KafkaTestServerFixtur
                 .Build();
 
             consumer.Subscribe(testTopicName);
-            var consumeResult = consumer.Consume(TimeSpan.FromSeconds(10)); // Adjust the timeout as needed
+            var consumeResult = consumer.Consume(TimeSpan.FromSeconds(10));
             consumer.Close();
 
-            var consumedEventData = JsonSerializer.Deserialize<PostCreatedEvent>(consumeResult.Message.Value);
+            PostCreatedEvent consumedEventData = JsonSerializer.Deserialize<PostCreatedEvent>(consumeResult.Message.Value);
 
             Assert.NotNull(consumeResult);
-            //Assert.Equal(eventData.Key, consumeResult.Message.Key);
             Assert.Equal(eventData, consumedEventData);
         }
-        catch (Exception ex){
-
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception on TestProduceAsyncIntegration{ex.Message}");
         }
         finally
         {

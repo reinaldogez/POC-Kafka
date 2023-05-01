@@ -6,7 +6,7 @@ using PocKafka.Utils;
 
 namespace PocKafka.Tests.Integration;
 
-public class KafkaTestServerFixture
+public class KafkaTestServerFixture : IDisposable
 {
     public ServiceProvider ServiceProvider { get; private set; }
     public KafkaTestServerFixture()
@@ -22,4 +22,8 @@ public class KafkaTestServerFixture
         ServiceProvider = services.BuildServiceProvider();
     }
 
+    public void Dispose()
+    {
+        ServiceProvider.Dispose();
+    }
 }
