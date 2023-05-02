@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using Confluent.Kafka;
 using PocKafka.Events;
+using PocKafka.Handlers;
 using PocKafka.Utils;
 
 namespace PocKafka;
@@ -9,9 +10,9 @@ namespace PocKafka;
 public class EventConsumer
 {
     private readonly ConsumerConfig _config;
-    private readonly EventHandler _eventHandler;
+    private readonly IEventHandler _eventHandler;
 
-    public EventConsumer(ConsumerConfig config, EventHandler eventHandler)
+    public EventConsumer(ConsumerConfig config, IEventHandler eventHandler)
     {
         _config = config;
         _eventHandler = eventHandler;

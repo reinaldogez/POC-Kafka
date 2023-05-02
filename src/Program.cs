@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PocKafka;
 using PocKafka.Events;
+using PocKafka.Handlers;
 using PocKafka.Utils;
 
 
@@ -117,7 +118,7 @@ static async Task<ServiceProvider> ConfigureServices()
 
     services.AddScoped<EventProducer>();
     services.AddScoped<EventConsumer>();
-    services.AddScoped<PocKafka.EventHandler>();
+    services.AddScoped<IEventHandler, PocKafka.Handlers.EventHandler>();
 
     ServiceProvider serviceProvider = services.BuildServiceProvider();
     return serviceProvider;

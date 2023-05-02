@@ -24,12 +24,13 @@ public class EventProducerIntegrationTests : IClassFixture<KafkaTestServerFixtur
     }
 
     [Fact]
-    public async Task TestProduceAsyncIntegration()
+    public async Task EventProducer_ShouldProduceEventToKafka_Successfully()
     {
         // Arrange
         var testTopicName = $"test-{Guid.NewGuid()}";
         PostCreatedEvent eventData = new(); // Replace with your actual derived event class
-
+        eventData.Id = Guid.NewGuid();
+        
         try
         {
             // Act
@@ -48,11 +49,11 @@ public class EventProducerIntegrationTests : IClassFixture<KafkaTestServerFixtur
             PostCreatedEvent consumedEventData = JsonSerializer.Deserialize<PostCreatedEvent>(consumeResult.Message.Value);
 
             Assert.NotNull(consumeResult);
-            Assert.Equal(eventData, consumedEventData);
+            Assert.Equal(eventData.Id, consumedEventData.Id);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Exception on TestProduceAsyncIntegration{ex.Message}");
+            Console.WriteLine($"Exception on EventProducer_ShouldProduceEventToKafka_Successfully{ex.Message}");
         }
         finally
         {

@@ -1,11 +1,11 @@
 using System.Text;
 using PocKafka.Events;
 
-namespace PocKafka;
+namespace PocKafka.Handlers;
 
-public class EventHandler
+public class EventHandler : IEventHandler
 {
-    public async Task On(PostCreatedEvent @event)
+    public void On(PostCreatedEvent @event)
     {
         StringBuilder sb = new();
         sb.AppendLine("New message received by EventConsumer");
