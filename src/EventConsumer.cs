@@ -37,6 +37,11 @@ public class EventConsumer
                 var consumeResult = consumer.Consume(TimeSpan.FromSeconds(3));
 
                 if (consumeResult?.Message == null) continue;
+                
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine("New message received by EventConsumer");
+                Console.WriteLine($"MessakeKey: {consumeResult.Message.Key}");
+                Console.ResetColor();
 
                 var options = new JsonSerializerOptions { Converters = { new EventJsonConverter() } };
                 var @event = JsonSerializer.Deserialize<BaseEvent>(consumeResult.Message.Value, options);
@@ -48,6 +53,7 @@ public class EventConsumer
                 }
 
                 handlerMethod.Invoke(_eventHandler, new object[] { @event });
+
                 consumer.Commit(consumeResult);
             }
         }

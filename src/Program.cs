@@ -36,7 +36,6 @@ async Task Go()
         e.Cancel = true;
         Console.WriteLine("CancelKeyPress event triggered");
         cts.Cancel();
-        Environment.Exit(0);
     };
     EventConsumer eventConsumer = serviceProvider.GetRequiredService<EventConsumer>();
 
@@ -50,6 +49,16 @@ async Task Go()
     while (!cts.Token.IsCancellationRequested)
     {
         await Task.Delay(1000);
+    }
+    try
+    {
+        // Wait for the consumer to finish
+        await consumeTask;
+        Console.WriteLine("consumeTask finished");
+    }
+    catch (OperationCanceledException)
+    {
+        // Ignore the exception since we're cancelling the consumer deliberately
     }
     Environment.Exit(0);
 
@@ -69,7 +78,25 @@ async Task Go()
                 await eventProducer.ProduceAsync("EventTopic", postCreatedEvent);
                 break;
             case ConsoleKey.D1:
-                Task startConsumerTask = Task.Run(() => eventConsumer.Consume("EventTopic", cts.Token));
+                CancellationTokenSource cts2 = new CancellationTokenSource();
+                Task startConsumerTask = Task.Run(() => eventConsumer.Consume("EventTopic", cts2.Token));
+                Console.CancelKeyPress += async (sender, e) =>
+                {
+                    e.Cancel = true;
+                    Console.WriteLine("CancelKeyPress event triggered");
+                    cts2.Cancel();
+                    try
+                    {
+                        // Wait for the consumer to finish
+                        await startConsumerTask;
+                        Console.WriteLine("startConsumerTask finished");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Ignore the exception since we're cancelling the consumer deliberately
+                    }
+                    Environment.Exit(0);
+                };
                 break;
             case ConsoleKey.D2:
                 break;

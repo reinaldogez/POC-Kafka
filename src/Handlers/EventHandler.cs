@@ -8,7 +8,6 @@ public class EventHandler : IEventHandler
     public void On(PostCreatedEvent @event)
     {
         StringBuilder sb = new();
-        sb.AppendLine("New message received by EventConsumer");
         sb.AppendLine($"EventType: {@event.Type}");
         sb.AppendLine($"PostId: {@event.Id}");
         sb.AppendLine($"Author: {@event.Author}");

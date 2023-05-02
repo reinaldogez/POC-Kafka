@@ -76,9 +76,9 @@ public class EventConsumerIntegrationTests : IClassFixture<KafkaTestServerFixtur
             //the topic before it can safely remove it.
             cts.Cancel();
 
-            // Wait for the consumer to finish
             try
             {
+                // Wait for the consumer to finish
                 await consumerTask;
             }
             catch (OperationCanceledException)
