@@ -1,22 +1,22 @@
 # POC-Kafka
-POC on Apache Kafka as a messaging service, creating topics, using consumers, and so on.
-=========
 
-## Propriedades de configuração interessantes
+Proof of Concept (POC) for Apache Kafka as a messaging service, including topic creation, using consumers, and more.
 
-ConsumerConfig.EnableAutoCommit - Por padrão, conforme o consumer lê as mensagens do Kafka, ele confirma periodicamente seu offset atual para as partições que ele está lendo. Para ter mais controle sobre exatamente quando os offsets são confirmados você pode definir ConsumerConfig.EnableAutoCommit como false e chamar o método commit no consumer.
+## Interesting Configuration Properties
 
-
+`ConsumerConfig.EnableAutoCommit` - By default, as the consumer reads messages from Kafka, it periodically commits its current offset for the partitions it's reading. To have more control over when offsets are committed, you can set `ConsumerConfig.EnableAutoCommit` to `false` and call the `commit` method on the consumer.
 
 ## Docker
 
-## Comandos
-Nesse momento com o Kafka rodando, vamos criar um tópico chamado "Test".
-Vamos criar o tópico utilizando [kafka-console-producer command line tool](kafka-console-producer command line tool) 
+## Commands
+
+With Kafka running, let's create a topic called "Test". We will create the topic using the [kafka-console-producer command line tool](https://kafka.apache.org/documentation/#quickstart_send):
+
 ~~~ps1
 docker exec kafka kafka-topics --create --bootstrap-server localhost:29092 --partitions 1 --replication-factor 1 --topic Test
 ~~~
-Obs: os tópicos também podem ser criados em C# utilizando a [Kafka .NET Client Library](https://docs.confluent.io/clients-confluent-kafka-dotnet/current/overview.html)
+
+Note: Topics can also be created in C# using the [Kafka .NET Client Library](https://docs.confluent.io/clients-confluent-kafka-dotnet/current/overview.html)
 
 ## References
 [Guide to Setting Up Apache Kafka Using Docker](https://www.baeldung.com/ops/kafka-docker-setup)
